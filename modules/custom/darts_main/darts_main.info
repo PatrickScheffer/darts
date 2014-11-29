@@ -1,0 +1,4 @@
+name = Darts
+description = Main module for Darts
+package = Darts
+core = 7.x

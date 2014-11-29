@@ -1,0 +1,14 @@
+name = Darts
+description = Theme for Darts
+engine = phptemplate
+core = 7.x
+php = 5.2
+regions[header] = header
+regions[content] = Main Content
+regions[footer] = Footer
+regions[edit_sidebar] = Edit Sidebar
+stylesheets[all][] = css/bootstrap-forms.min.css
+stylesheets[all][] = css/bootstrap-alerts.css
+stylesheets[all][] = css/rendered/style.css
+stylesheets[print][] = css/rendered/print.css
+stylesheets-conditional[IE][all][] = css/rendered/ie.css

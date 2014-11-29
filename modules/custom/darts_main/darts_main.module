@@ -1,0 +1,74 @@
+<?php
+
+/*
+ * Implements hook_menu_alter().
+ */
+function darts_main_menu_alter(&$items) {
+  // Disable node page
+  if(isset($items['node'])) {
+    $items['node']['access callback'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function darts_main_menu() {
+  $items = array();
+  // Page for Darts settings
+  $items['admin/config/system/darts-admin'] = array(
+    'title' => 'Darts settings',
+    'description' => 'Settings for Darts',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('darts_main_admin_settings'),
+    'access arguments' => array('edit darts settings'),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function darts_main_permission() {
+  return array(
+    'edit darts settings' => array(
+      'title' => t('Edit Darts Settings'),
+      'description' => t('Is able to edit the Darts settings'),
+    ),
+  );
+}
+/*
+* Admin settings page, uses a hook to get settings fields
+*/
+function darts_main_admin_settings($form, &$form_state) {
+  // Run a hook to fetch all Darts setting parts
+  $forms = module_invoke_all('darts_main_settings_fields', $form, $form_state);
+  // Loop through results and put in form
+  foreach ($forms as $key => $hookform) {
+    $form[$key] = $hookform;
+    $form[$key]['#collapsible'] = TRUE;
+    $form[$key]['#collapsed'] = TRUE;
+  }
+  $form['#submit'][] = 'darts_main_admin_settings_submit';
+  $form['#validate'][] = 'darts_main_admin_settings_validate';
+  // Return as settings form
+  return system_settings_form($form);
+}
+function darts_main_admin_settings_submit($form, &$form_state) {
+  $return = module_invoke_all('darts_main_settings_fields_submit', $form, $form_state);
+  if ($return) {
+    $form_state = $return;
+  }
+}
+function darts_main_admin_settings_validate($form, &$form_state) {
+  $return = module_invoke_all('darts_main_settings_fields_validate', $form, $form_state);
+  if ($return) {
+    $form_state = $return;
+  }
+}
+
+function darts_main_wysiwyg_editor_settings_alter(&$settings, $context) {
+  if ($context['profile']->editor == 'ckeditor') {
+    $settings['height'] = 200;
+  }
+}

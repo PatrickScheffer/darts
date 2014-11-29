@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the FT Core feature.
+ */
+
+include_once 'ft_00_core.features.inc';

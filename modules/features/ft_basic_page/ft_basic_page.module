@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the FT Basic Page feature.
+ */
+
+include_once 'ft_basic_page.features.inc';

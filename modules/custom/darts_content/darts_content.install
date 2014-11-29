@@ -1,0 +1,134 @@
+<?php
+
+/**
+ * Implements hook_kw_manifests_info().
+ */
+function darts_content_kw_manifests_info() {
+
+  $manifests = array();
+
+  $manifests['darts_content_pages'] = array(
+    'callback' => 'darts_content_pages',
+  );
+
+  return $manifests;
+}
+
+/*
+ * Helper to create the frontpage
+ */
+function darts_content_pages() {
+  $pages = array(
+    'home' => array('name' => 'Home', 'front' => TRUE, 'content' => '', 'menu' => 'main-menu'),
+    '404' => array('name' => '404 - Niet gevonden', 'notfound' => TRUE),
+    '403' => array('name' => '403 - Geen toegang', 'accessdenied' => TRUE),
+  );
+  $weight = 0;
+  foreach($pages as $key => $page) {
+    if(!isset($page['alias'])) {
+      $required = array(
+
+      );
+      kw_itemnames_ensure(
+        'node',
+        $key,
+        $required,
+        array(
+             'title' => $page['name'],
+             'type' => 'basic_page',
+             'body' => array(
+               LANGUAGE_NONE => array(array(
+                                        'value' => $page['name'],
+                                        'format' => 'full_html',
+                                      ))
+             )
+        )
+      );
+    }
+    if(isset($page['alias'])) {
+      $nid = kw_itemnames_item_id('node', $page['alias']);
+    } else {
+      $nid = kw_itemnames_item_id('node', $key);
+    }
+    $weight++;
+    if(isset($page['front']) && $page['front']) {
+      $node = node_load($nid);
+      darts_content_set_panel_layout($node, 'node:basic_page:frontpage');
+      variable_set('site_frontpage', 'node/' . $nid);
+    }
+    if(isset($page['notfound']) && $page['notfound']) {
+      variable_set('site_404', 'node/' . $nid);
+    }
+    if(isset($page['accessdenied']) && $page['accessdenied']) {
+      variable_set('site_403', 'node/' . $nid);
+    }
+    if(isset($page['menu'])) {
+      $required = array(
+        'menu_name' => $page['menu'],
+        'customized' => 1,
+      );
+      $optional = array(
+        'link_path' => 'node/' . $nid,
+        'link_title' => $page['name'],
+        'menu_name' => $page['menu'],
+        'weight' => $weight,
+        'customized' => 1,
+        'options' => array(
+          'attributes' => array(
+            'title' => $page['name'],
+          ),
+        ),
+      );
+      kw_itemnames_ensure(
+        'menu_link',
+        $key . '_menu',
+        $required,
+        $optional
+      );
+    }
+  }
+}
+
+function darts_content_set_panel_layout($node, $layout) {
+  darts_content_clear_panel_info($node->nid);
+  $save = array(
+    'entity_type' => 'node',
+    'entity_id' => $node->nid,
+    'revision_id' => $node->vid,
+    'no_blocks' => 0,
+    'name' => $layout,
+    'css_id' => '',
+    'css' => '',
+    'pipeline' => 'standard',
+    'contexts' => unserialize('a:0:{}'),
+    'relationships' => unserialize('a:0:{}'),
+    'did' => 0,
+    'view_mode' => 'full',
+    'css_class' => '',
+    'title_element' => 'H2',
+    'link_to_entity' => 0,
+    'extra' => unserialize('a:0:{}'),
+  );
+  // Insert record
+  drupal_write_record('panelizer_entity', $save);
+}
+
+function darts_content_clear_panel_info($nid) {
+  $result = db_select('panelizer_entity', 'p')
+    ->fields('p')
+    ->condition('entity_id', $nid, '=')
+    ->execute();
+  while($record = $result->fetchAssoc()) {
+    if($record['did'] > 0) {
+      db_delete('panels_display')
+        ->condition('did', $record['did'])
+        ->execute();
+      db_delete('panels_pane')
+        ->condition('did', $record['did'])
+        ->execute();
+    }
+  }
+  db_delete('panelizer_entity')
+    ->condition('entity_id', $nid,'=')
+    ->execute();
+}

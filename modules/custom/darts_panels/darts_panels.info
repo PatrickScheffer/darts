@@ -1,0 +1,4 @@
+name = Darts Panels
+description = Panels module for Darts
+package = Darts
+core = 7.x

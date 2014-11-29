@@ -1,0 +1,4 @@
+name = Darts
+description = Blocks module for Darts
+package = Darts
+core = 7.x

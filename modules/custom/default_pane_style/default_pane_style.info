@@ -1,0 +1,6 @@
+name = Default Pane Style
+description = "Change default style for panel panes and regions."
+package = ".VDMi/"
+core = 7.x
+
+dependencies[] = panels

@@ -1,0 +1,17 @@
+<?php
+
+/**
+ * Implements hook_enable()
+ */
+function default_pane_style_enable() {
+  $weight = db_select('system', 's')
+              ->fields('s', array('weight'))
+              ->condition('name', 'panels', '=')
+              ->execute()
+              ->fetchField();
+  db_update('system')
+    ->fields(array('weight' => ($weight + 1)))
+    ->condition('type', 'module')
+    ->condition('name', 'default_pane_style')
+    ->execute();
+}

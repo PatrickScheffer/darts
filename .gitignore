@@ -1,0 +1,36 @@
+# ignore modules in contrib, but keep the README.md
+modules/contrib/*
+!modules/contrib/README.md
+
+# ignore modules in kraftwagen, but keep the README.md
+modules/kraftwagen/*
+!modules/kraftwagen/README.md
+
+# ignore modules in sandbox, but keep the README.md
+modules/sandbox/*
+!modules/sandbox/README.md
+
+# ignore modules in devel, but keep the README.md
+modules/devel/*
+!modules/devel/README.md
+
+# ignore modules in vdmi, but keep the README.md
+modules/vdmi/*
+!modules/vdmi/README.md
+
+# ignore libraries in libraries, but keep the README.md
+libraries/*
+!libraries/README.md
+
+# OS specific shit
+.DS_Store
+Thumbs.db
+
+# IDE specific shit
+.idea
+
+# Build files
+build/*
+
+# Sass cache
+themes/*/.sass-cache

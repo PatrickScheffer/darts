@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function default_pane_style_ctools_plugin_directory($module, $plugin) {
+  // Our module is loaded after panels itself.
+  // We override the default style by redeclaring it.
+  if ($module == 'panels' && $plugin == 'styles') {
+    return 'styles';
+  }
+}
+
+/**
+ * Implements hook_panels_pane_content_alter().
+ */
+function default_pane_style_panels_pane_content_alter($content, $pane, $args, $context)  {
+  // No style set? let it be default.
+  if (empty($pane->style['style'])) {
+    $pane->style['style'] = 'default';
+  }
+}
