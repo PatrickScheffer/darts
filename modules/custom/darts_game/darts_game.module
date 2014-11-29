@@ -1,0 +1,46 @@
+<?php
+/**
+ * Implements hook_menu().
+ */
+function darts_game_menu() {
+	$items['game'] = array(
+    'title' => 'Game',
+    'page callback' => 'darts_game_load',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Page callback.
+ */
+function darts_game_load() {
+	$form = drupal_get_form('darts_game_form');
+
+	return $form;
+}
+
+function darts_game_form($form, &$form_state) {
+	$form['score']['new_score'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Score'),
+	);
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('Submit'),
+	);
+	$form['#validate'] = array('darts_game_form_validate');
+	$form['#submit'] = array('darts_game_form_submit');
+
+	return $form;
+}
+
+function darts_game_form_validate($form, &$form_state) {
+	//
+}
+
+function darts_game_form_submit($form, &$form_state) {
+	//
+}

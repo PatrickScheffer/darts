@@ -1,0 +1,4 @@
+name = Darts Game
+description = Game module for Darts
+package = Darts
+core = 7.x

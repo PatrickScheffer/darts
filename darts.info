@@ -61,6 +61,7 @@ dependencies[] = darts_main
 dependencies[] = darts_panels
 dependencies[] = darts_content
 dependencies[] = darts_blocks
+dependencies[] = darts_game
 
 ; Environment dependencies
 env_dependencies[development][] = field_ui
