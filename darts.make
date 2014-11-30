@@ -97,6 +97,8 @@ projects[metatag][version]              = "1.0-rc2"
 
 projects[advagg][version]               = "2.7"
 
+projects[eck][version]                  = "2.0-rc5"
+
 ; VDMi Review, adds coder
 ; projects[vdmi_review][type]            = "module"
 ; projects[vdmi_review][download][type]  = "git"

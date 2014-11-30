@@ -3,9 +3,15 @@
  * Implements hook_menu().
  */
 function darts_game_menu() {
-	$items['game'] = array(
-    'title' => 'Game',
-    'page callback' => 'darts_game_load',
+	$items['dashboard'] = array(
+    'title' => t('Dashboard'),
+    'page callback' => 'darts_dashboard',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['match/new'] = array(
+    'title' => t('New match'),
+    'page callback' => 'darts_new_match',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
@@ -16,13 +22,25 @@ function darts_game_menu() {
 /**
  * Page callback.
  */
-function darts_game_load() {
-	$form = drupal_get_form('darts_game_form');
+function darts_dashboard() {
+	$build = array();
+	$build['new_match'] = array(
+		'#type' => 'markup',
+		'#markup' => l(t('New match'), 'match/new'),
+	);
+	return $build;
+}
 
+function darts_new_match() {
+  $entity = entity_create('match', array('type' => 'match'));
+  $form = drupal_get_form('eck__entity__form_add_match', $entity);
+  $form['field_team_1_id']['#access'] = FALSE;
+  $form['field_team_2_id']['#access'] = FALSE;
+  //dpm($form);
 	return $form;
 }
 
-function darts_game_form($form, &$form_state) {
+function darts_new_match_form($form, &$form_state) {
 	$form['score']['new_score'] = array(
 		'#type' => 'textfield',
 		'#title' => t('Score'),
@@ -31,16 +49,16 @@ function darts_game_form($form, &$form_state) {
 		'#type' => 'submit',
 		'#value' => t('Submit'),
 	);
-	$form['#validate'] = array('darts_game_form_validate');
-	$form['#submit'] = array('darts_game_form_submit');
+	$form['#validate'] = array('darts_new_match_form_validate');
+	$form['#submit'] = array('darts_new_match_form_submit');
 
 	return $form;
 }
 
-function darts_game_form_validate($form, &$form_state) {
+function darts_new_match_form_validate($form, &$form_state) {
 	//
 }
 
-function darts_game_form_submit($form, &$form_state) {
+function darts_new_match_form_submit($form, &$form_state) {
 	//
 }

@@ -11,6 +11,7 @@ dependencies[] = file
 dependencies[] = image
 dependencies[] = options
 dependencies[] = list
+dependencies[] = taxonomy
 
 ; Contrib dependencies
 dependencies[] = kw_manifests
@@ -50,6 +51,7 @@ dependencies[] = advagg
 dependencies[] = advagg_bundler
 dependencies[] = advagg_css_compress
 dependencies[] = advagg_js_compress
+dependencies[] = eck
 
 ; Features
 dependencies[] = ft_00_core
