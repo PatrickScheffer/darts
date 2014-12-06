@@ -1,5 +1,13 @@
 <?php
 /**
+ * Implements hook_ctools_plugin_directory().
+ */
+function darts_game_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'content_types') {
+    return 'panes';
+  }
+}
+/**
  * Implements hook_menu().
  */
 function darts_game_menu() {
@@ -32,33 +40,266 @@ function darts_dashboard() {
 }
 
 function darts_new_match() {
+	global $user;
+
   $entity = entity_create('match', array('type' => 'match'));
   $form = drupal_get_form('eck__entity__form_add_match', $entity);
+
   $form['field_team_1_id']['#access'] = FALSE;
   $form['field_team_2_id']['#access'] = FALSE;
-  //dpm($form);
-	return $form;
-}
+  $form['field_winning_team_id']['#access'] = FALSE;
+  $form['field_statistics']['#access'] = FALSE;
+  $form['field_status']['#access'] = FALSE;
+  $form['title']['#value'] = t(' Match on @date', array('@date' => date('d/m/Y - H:i:s')));
 
-function darts_new_match_form($form, &$form_state) {
-	$form['score']['new_score'] = array(
-		'#type' => 'textfield',
-		'#title' => t('Score'),
-	);
-	$form['submit'] = array(
-		'#type' => 'submit',
-		'#value' => t('Submit'),
-	);
-	$form['#validate'] = array('darts_new_match_form_validate');
-	$form['#submit'] = array('darts_new_match_form_submit');
+  $form['field_team_1'][LANGUAGE_NONE][0]['target_id']['#value'] = $user->name  . ' (' . $user->uid . ')';
+  $cpu = user_load_by_name('computer');
+  if (isset($cpu->uid) && $cpu->uid > 0) {
+  	$form['field_team_2'][LANGUAGE_NONE][0]['target_id']['#value'] = $cpu->name . ' (' . $cpu->uid . ')';
+  }
+
+  $form['#validate'][] = 'darts_new_match_form_validate';
+  $form['#submit'][] = 'darts_new_match_form_submit';
 
 	return $form;
 }
 
 function darts_new_match_form_validate($form, &$form_state) {
-	//
+	dpm($form_state, 'validate');
 }
 
 function darts_new_match_form_submit($form, &$form_state) {
-	//
+	dpm($form_state, 'submit');
+}
+
+function dart_game_play_match_form($form, &$form_state, $match, $configuration) {
+	$form = array();
+
+	//$set = dart_game_current_set($match->id);
+	$leg = dart_game_current_leg($match->id);
+	if (empty($leg)) {
+		return t('No active leg.');
+	}
+
+	$stats = array();
+	if (isset($leg->field_statistics[LANGUAGE_NONE][0]['value'])) {
+		$stats = unserialize($leg->field_statistics[LANGUAGE_NONE][0]['value']);
+	}
+
+	if (isset($stats['last_team'])) {
+		// determine next team
+		if($stats['last_team'] == 1) {
+			$team_turn = 2;
+		} else {
+			$team_turn = 1;
+		}
+		// determine next player in that team
+		if (isset($stats['last_player']['team'][ $team_turn ])) {
+			foreach ($configuration['team_' . $team_turn] as $key => $teammember) {
+				if ($teammember->uid == $stats['last_player']['team'][ $team_turn ]) {
+					if (isset($configuration['team_' . $team_turn][ $key + 1 ])) {
+						$team_player_turn = $configuration['team_' . $team_turn][ $key + 1 ]->uid;
+					} else {
+						$team_player_turn = $configuration['team_' . $team_turn][0]->uid;
+					}
+					break;
+				}
+			}
+		} else {
+			$team_player_turn = $configuration['team_' . $team_turn][0]->uid;
+		}
+	} else {
+		// pick random a team and player
+		$team_turn = rand(1,2);
+		$team_player = array_rand($configuration['team_' . $team_turn]);
+		$team_player_turn = $configuration['team_' . $team_turn][ $team_player ]->uid;
+	}
+
+	if (isset($leg->field_score_team_1[LANGUAGE_NONE][0]['value'])) {
+		$form['remaining_score_team_1'] = array(
+			'#type' => 'markup',
+			'#markup' => '<div>Remaining score team 1: ' . $leg->field_score_team_1[LANGUAGE_NONE][0]['value'] . '</div>',
+		);
+	}
+	if (isset($leg->field_score_team_2[LANGUAGE_NONE][0]['value'])) {
+		$form['remaining_score_team_2'] = array(
+			'#type' => 'markup',
+			'#markup' => '<div>Remaining score team 2: ' . $leg->field_score_team_2[LANGUAGE_NONE][0]['value'] . '</div>',
+		);
+	}
+
+	$form['turn'] = array(
+		'#type' => 'markup',
+		'#markup' => '<div>Now throwing: Team ' . $team_turn . ', player ' . $team_player_turn . '</div>',
+	);
+	$form['score'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Thrown score'),
+	);
+	$form['leg_id'] = array(
+		'#type' => 'hidden',
+		'#value' => $leg->id,
+	);
+	$form['team'] = array(
+		'#type' => 'hidden',
+		'#value' => $team_turn,
+	);
+	$form['player_id'] = array(
+		'#type' => 'hidden',
+		'#value' => $team_player_turn,
+	);
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('Submit'),
+	);
+
+	return $form;
+}
+
+function dart_game_play_match_form_validate($form, &$form_state) {
+	if (!isset($form_state['values']['score']) || empty($form_state['values']['score'])) {
+		form_set_error(t('No score input.'));
+	}
+	if (!isset($form_state['values']['leg_id'])) {
+		form_set_error(t('No leg ID found.'));
+	}
+	if (!isset($form_state['values']['team'])) {
+		form_set_error(t('No team found.'));
+	}
+	if (!isset($form_state['values']['player_id'])) {
+		form_set_error(t('No player ID found.'));
+	}
+}
+
+function dart_game_play_match_form_submit($form, &$form_state) {
+	dart_game_process_leg(
+		$form_state['values']['leg_id'], 
+		$form_state['values']['score'], 
+		$form_state['values']['team'],
+		$form_state['values']['player_id']
+	);
+}
+
+function dart_game_current_leg($match_id) {
+	$query = new EntityFieldQuery();
+	$query->entityCondition('entity_type', 'leg')
+		->entityCondition('bundle', 'leg')
+		->fieldCondition('field_match', 'target_id', $match_id)
+		->fieldCondition('field_status', 'value', 'started')
+		->range(0,1)
+		->addMetaData('account', user_load(1));
+	$result = $query->execute();
+
+	if (isset($result['leg']) && !empty($result['leg'])) {
+		$leg = entity_load('leg', array_keys($result['leg']));
+		return array_pop($leg);
+	}
+}
+
+function dart_game_load_legs($match_id = 0, $leg_id = 0) {
+	if($match_id + $leg_id == 0) {
+		return FALSE;
+	}
+
+	$query = new EntityFieldQuery();
+	$query->entityCondition('entity_type', 'leg')
+		->entityCondition('bundle', 'leg');
+
+	if ($leg_id > 0) {
+		$query->propertyCondition('id', $leg_id);
+	}
+
+	if ($match_id > 0) {
+		$query->fieldCondition('field_match', 'target_id', $match_id);
+	}
+
+	$query->addMetaData('account', user_load(1));
+	$result = $query->execute();
+
+	if (isset($result['leg']) && !empty($result['leg'])) {
+		return entity_load('leg', array_keys($result['leg']));
+	}
+
+	return FALSE;
+}
+
+function dart_game_process_leg($leg_id, $score, $team, $player_id) {
+	$leg = dart_game_load_legs(0, $leg_id);
+
+	if (!isset($leg[ $leg_id ])) {
+		return FALSE;
+	}
+
+	if (!isset($leg[ $leg_id ]->{'field_score_team_' . $team}[LANGUAGE_NONE][0]['value'])) {
+		return FALSE;
+	}
+
+	$remaining_score = $leg[ $leg_id ]->{'field_score_team_' . $team}[LANGUAGE_NONE][0]['value'];
+	$new_remaining_score = $remaining_score - $score;
+
+	if ($new_remaining_score == 0) {
+		// new leg
+	}
+
+	if ($new_remaining_score < 0 || $new_remaining_score == 1) {
+		// add zero score to averages and do nothing
+		$new_remaining_score = $remaining_score;
+	}
+
+	$stats = array();
+	if (isset($leg[ $leg_id ]->field_statistics[LANGUAGE_NONE][0]['value'])) {
+		$stats = unserialize($leg[ $leg_id ]->field_statistics[LANGUAGE_NONE][0]['value']);
+	}
+	$new_stats = serialize(dart_game_update_stats($stats, $score, $team, $player_id));
+
+	dart_game_update_leg($leg_id, $team, $new_remaining_score, $new_stats);
+
+}
+
+function dart_game_update_leg($leg_id, $team, $score, $stats) {
+	$leg = entity_load_single('leg', $leg_id);
+	
+	if (empty($leg)) {
+		return FALSE;
+	}
+
+	if (!isset($leg->{'field_score_team_' . $team}[LANGUAGE_NONE][0]['value'])) {
+		return FALSE;
+	}
+
+	$leg->{'field_score_team_' . $team}[LANGUAGE_NONE][0]['value'] = $score;
+	$leg->field_statistics[LANGUAGE_NONE][0]['value'] = $stats;
+
+	return entity_save('leg', $leg);
+}
+
+function dart_game_update_stats($stats, $score, $team, $player_id) {
+	$stats['last_team'] = $team;
+	$stats['last_player']['team'][ $team ] = $player_id;
+
+	if (isset($stats['team'][ $team ]['total_score'])) {
+		$stats['team'][ $team ]['total_score'] += $score;
+	} else {
+		$stats['team'][ $team ]['total_score'] = $score;
+	}
+
+	if (isset($stats['team'][ $team ]['total_count'])) {
+		$stats['team'][ $team ]['total_count']++;
+	} else {
+		$stats['team'][ $team ]['total_count'] = 1;
+	}
+
+	if (isset($stats['team'][ $team ][ $player_id ]['total_score'])) {
+		$stats['team'][ $team ][ $player_id ]['total_score'] += $score;
+	} else {
+		$stats['team'][ $team ][ $player_id ]['total_score'] = $score;
+	}
+
+	if (isset($stats['team'][ $team ][ $player_id ]['total_count'])) {
+		$stats['team'][ $team ][ $player_id ]['total_count']++;
+	} else {
+		$stats['team'][ $team ][ $player_id ]['total_count'] = 1;
+	}
+
+	return $stats;
 }
